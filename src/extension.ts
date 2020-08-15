@@ -1,11 +1,10 @@
 'use strict';
 
-import { workspace, ExtensionContext, window, Disposable } from 'vscode';
-import { TransportKind, LanguageClient, LanguageClientOptions, ServerOptions } from 'vscode-languageclient';
+import { workspace, ExtensionContext, Disposable } from 'vscode';
+import { LanguageClient, LanguageClientOptions, ServerOptions } from 'vscode-languageclient';
 import * as path from 'path'
 import * as fs from 'fs'
 import TelemetryReporter from 'vscode-extension-telemetry';
-import * as jvmDetector from './requirements';
 
 let reporter: TelemetryReporter;
 
@@ -33,20 +32,7 @@ function createReporter(context: ExtensionContext) {
 	reporter = new TelemetryReporter(extensionId, version, "4f5e6451-3d46-49f6-a295-ade5e6d47d47");
 }
 
-let previousMode: Mode | undefined = undefined;
 async function activateWithConfig(context: ExtensionContext) {
-
-	const mode = await getMode()
-	if (!mode) {
-		window.showErrorMessage("Could not locate a language server. Please configure \"miksilo.jar\" in settings.");
-		return;
-	}
-
-	if (mode?.toString() === previousMode?.toString())
-		return;
-
-	previousMode = mode;
-
 	for(const previousClient of context.subscriptions) {
 		previousClient.dispose()
 	}
@@ -56,54 +42,57 @@ async function activateWithConfig(context: ExtensionContext) {
 	context.subscriptions.push(reporter);
 
 	const disposable = activateLanguage();
+	context.subscriptions.push(disposable);
 }
 
 function activateLanguage(): Disposable {
-	let serverOptions: ServerOptions = prepareExecutable(mode, language)
+	let serverOptions: ServerOptions = createServerOptions();
 	
 	let clientOptions: LanguageClientOptions = {
-		documentSelector: [{scheme: 'file', language: "Dafny"}],
+		documentSelector: [{scheme: 'file', language: "eafny"}],
 		synchronize: {
-			configurationSection: 'miksilo',
+			configurationSection: 'eafny',
 		}
 	}
 	
 	const start = Date.now()
 	const languageClient = new LanguageClient(
-		"dafny-vscode", "Dafny Language Server", 
+		"eafny", "Eafny Language Server", 
 		serverOptions, clientOptions);
 
 	const info = (message: String) => {
 		languageClient.outputChannel.appendLine(`[INFO] ${message}`);
 	}
-	if (mode.reason) {
-	    info(mode.reason);
-	}
 	languageClient.onReady().then(_ => {
 		const connectionTime = Date.now() - start;
 		info(`Connection time was ${connectionTime}`);
-		reporter.sendTelemetryEvent(language.vscodeName + "_ready", undefined, { connectionTime })
+		reporter.sendTelemetryEvent("Dafny_ready", undefined, { connectionTime })
 	})
 	languageClient.onTelemetry((data: any) => {
 		const {name, value} = data
 		const measurements = {}
 		measurements[name] = value
 		info(`${name} was ${value}`);
-		reporter.sendTelemetryEvent(language.vscodeName + "_lspServer", undefined, measurements)
+		reporter.sendTelemetryEvent("Dafny_lspServer", undefined, measurements)
 	})
 
-	info("Using Miksilo mode " + mode);
 	return languageClient.start();
 
 }
 
-function prepareExecutable(mode: Mode, language: LanguageConfiguration): ServerOptions {
+function getExecutable() {
+	return `C:\\Users\\Steen\\source\\repos\\dafny\\Source\\DafnyLSPServerTests\\bin\\Debug\\DafnyLSPServer.exe`
+}
 
-	language.miksiloName = language.miksiloName || language.vscodeName;
-    const args = [language.miksiloName, `${__dirname}/CloudFormationResourceSpecification.json`]
-	const serverOptions = mode.createServerOptions(args);
-
-	return serverOptions;
+function createServerOptions(): ServerOptions {
+	return {
+		command: getExecutable(),
+		options: {
+			env: process.env,
+			stdio: 'pipe'
+		},
+		args: []
+	}
 }
 
 export function deactivate() {

@@ -1,18 +1,12 @@
 {
 	"name": "vscode-dafny",
 	"displayName": "Dafny IDE",
-	"description": "Rich language support for AWS CloudFormation Templates",
 	"publisher": "keyboardDrummer",
 	"license": "MIT",
 	"version": "0.0.20",
 	"keywords": [
 		"Dafny"
 	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/keyboardDrummer/cloudformation-ide-tooling"
-	},
-	"icon": "images/aws-cloudformation-icon.png",
 	"engines": {
 		"vscode": "^1.30.x"
 	},
@@ -23,47 +17,62 @@
 		"Language Packs"
 	],
 	"activationEvents": [
-		"onLanguage:dafny"
+		"onLanguage:dafny",
+		"*"
 	],
 	"main": "./out/extension",
 	"contributes": {
 		"languages": [
 			{
-				"id": "dafny",
+				"id": "eafny",
 				"aliases": [
-					"Dafny",
-					"dafny"
+					"Eafny",
+					"Eafny"
 				],
 				"extensions": [
-					".dfy",
-					".dfyi"
+					".efy"
 				],
 				"configuration": "./language-configuration.json"
 			}
 		],
 		"snippets": [
 			{
-				"language": "dafny",
+				"language": "eafny",
 				"path": "./snippets/dafny.json"
 			}
 		],
 		"grammars": [
 			{
-				"language": "dafny",
+				"language": "eafny",
 				"scopeName": "text.dfy.dafny",
 				"path": "./syntaxes/Dafny.tmLanguage"
 			}
-		]
+		],
+		"configuration": {
+			"type": "object",
+			"title": "Eafny",
+			"properties": {
+				"dafny.trace.server": {
+					"scope": "window",
+					"type": "string",
+					"enum": [
+						"off",
+						"messages",
+						"verbose"
+					],
+					"default": "off",
+					"description": "Traces the communication between VSCode and the language server."
+				}
+			}
+		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile && cd .. && sbt vscodeprepublish",
+		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -w -p ./",
 		"update-vscode": "node ./node_modules/vscode/bin/install",
 		"postinstall": "node ./node_modules/vscode/bin/install",
-		"create-assembly": "cd Miksilo && sbt assembly",
-		"move-assembly": "npm run create-assembly &&",
-		"try": "npm run vscode:prepublish && code --extensionDevelopmentPath=$PWD"
+		"try": "npm run vscode:prepublish && code --extensionDevelopmentPath=./"
 	},
 	"dependencies": {
 		"vscode-extension-telemetry": "0.1.2",
